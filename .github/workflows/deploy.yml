@@ -1,0 +1,33 @@
+name: 🚀 Deploy
+on: 
+  push:
+    # branches:
+    #   - main
+jobs:
+  build:
+    name: 🚀 Deploy
+    runs-on: ubuntu-latest
+    steps:
+    - name: executing remote ssh commands using password
+      uses: appleboy/ssh-action@master
+      env:
+        GITHUB_CONTEXT: ${{ toJson(github) }}
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USER }}
+        password: ${{secrets.PASS}}  
+        port: ${{secrets.PORT}}
+        script: |
+          curl -sS https://getcomposer.org/installer | php
+          cd domains
+          cd apki.eizi.pl
+          git init
+          git reset --hard
+          ${{ secrets.SCRIPT }}
+          cd laravel
+          git pull
+          /usr/local/bin/php80 /home/webico/composer.phar install
+          /usr/local/bin/php80 /home/webico/composer.phar dump-autoload
+          /usr/local/bin/php80 artisan migrate:fresh --seed
+          /usr/local/bin/php80 artisan storage:link
+          ln -sfv /home/webico/domains/apki.eizi.pl/laravel/public/* /home/webico/domains/apki.eizi.pl/public_html
